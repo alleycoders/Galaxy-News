@@ -3,11 +3,6 @@ name: Production Desktop Compile (Manual)
 on:
   workflow_dispatch: # On-demand execution only
 
-# This forces all jobs to run their terminal commands inside the /src directory by default
-defaults:
-  run:
-    working-directory: src
-
 jobs:
   compile-desktop:
     name: Compile for ${{ matrix.target }}
@@ -38,7 +33,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('src/**/pubspec.lock') }} # Adjusted path for the lockfile cache key
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             ${{ runner.os }}-pub-
 
@@ -55,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: galaxynews-windows-build-${{ github.run_number }}
-          path: src/build/windows/runner/Release/ # Path updated to reflect src directory root
+          path: build/windows/runner/Release/
 
       # 4. LINUX NATIVE TOOLCHAIN WORKLOADS
       - name: Install Linux SDK & Build Dependencies
@@ -76,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: galaxynews-linux-raw-${{ github.run_number }}
-          path: src/build/linux/x64/release/bundle/ # Path updated to reflect src directory root
+          path: build/linux/x64/release/bundle/
 
       # 5. ISOLATED FLATPAK PACKAGING STEP
       - name: Build Universal Flatpak Package
@@ -84,7 +79,7 @@ jobs:
         uses: flatpak/flatpak-github-actions/flatpak-builder@v1
         with:
           bundle: com.galaxyNews.app.flatpak
-          manifest-path: src/flatpak/com.galaxyNews.app.json # Path updated to look inside src/flatpak/
+          manifest-path: flatpak/com.galaxyNews.app.json
           run-tests: false
 
       - name: Save Linux Universal Flatpak Artifact
@@ -92,4 +87,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: galaxynews-linux-flatpak-${{ github.run_number }}
-          path: src/com.galaxyNews.app.flatpak # Path updated to reflect src directory root
+          path: com.galaxyNews.app.flatpak
