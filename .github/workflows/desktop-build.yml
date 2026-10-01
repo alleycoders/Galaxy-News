@@ -1,0 +1,95 @@
+name: Production Desktop Compile (Manual)
+
+on:
+  workflow_dispatch: # On-demand execution only
+
+# This forces all jobs to run their terminal commands inside the /src directory by default
+defaults:
+  run:
+    working-directory: src
+
+jobs:
+  compile-desktop:
+    name: Compile for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows
+            os: windows-latest
+          - target: linux
+            os: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 1. PINNED ENVIRONMENT SETUP
+      - name: Set up Flutter Environment
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0' # Adjust this to match your local Mac Flutter version
+          channel: 'stable'
+          cache: true
+
+      # 2. RUNNER DEPENDENCY CACHING
+      - name: Cache Flutter Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('src/**/pubspec.lock') }} # Adjusted path for the lockfile cache key
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      # 3. WINDOWS NATIVE EXECUTION BLOCK
+      - name: Compile Windows Bundle
+        if: matrix.target == 'windows'
+        run: |
+          flutter config --enable-windows-desktop
+          flutter pub get
+          flutter build windows --release
+
+      - name: Save Windows Build Artifact
+        if: matrix.target == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: galaxynews-windows-build-${{ github.run_number }}
+          path: src/build/windows/runner/Release/ # Path updated to reflect src directory root
+
+      # 4. LINUX NATIVE TOOLCHAIN WORKLOADS
+      - name: Install Linux SDK & Build Dependencies
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev flatpak flatpak-builder
+
+      - name: Compile Raw Linux Binary
+        if: matrix.target == 'linux'
+        run: |
+          flutter config --enable-linux-desktop
+          flutter pub get
+          flutter build linux --release
+
+      - name: Save Raw Linux Binary Artifact
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: galaxynews-linux-raw-${{ github.run_number }}
+          path: src/build/linux/x64/release/bundle/ # Path updated to reflect src directory root
+
+      # 5. ISOLATED FLATPAK PACKAGING STEP
+      - name: Build Universal Flatpak Package
+        if: matrix.target == 'linux'
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v1
+        with:
+          bundle: com.galaxyNews.app.flatpak
+          manifest-path: src/flatpak/com.galaxyNews.app.json # Path updated to look inside src/flatpak/
+          run-tests: false
+
+      - name: Save Linux Universal Flatpak Artifact
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: galaxynews-linux-flatpak-${{ github.run_number }}
+          path: src/com.galaxyNews.app.flatpak # Path updated to reflect src directory root
