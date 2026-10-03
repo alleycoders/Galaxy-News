@@ -5,16 +5,8 @@ on:
 
 jobs:
   compile-desktop:
-    name: Compile for ${{ matrix.target }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: windows
-            os: windows-latest
-          - target: linux
-            os: ubuntu-latest
+    name: Compile for Windows
+    runs-on: windows-latest
 
     steps:
       - name: Checkout Repository
@@ -39,57 +31,13 @@ jobs:
 
       # 3. WINDOWS NATIVE EXECUTION BLOCK
       - name: Compile Windows Bundle
-        if: matrix.target == 'windows'
         run: |
           flutter config --enable-windows-desktop
           flutter pub get
           flutter build windows --release
 
       - name: Save Windows Build Artifact
-        if: matrix.target == 'windows'
         uses: actions/upload-artifact@v4
         with:
           name: galaxynews-windows-build-${{ github.run_number }}
           path: build/windows/runner/Release/
-
-      # 4. LINUX NATIVE TOOLCHAIN WORKLOADS
-      - name: Install Linux SDK & Build Dependencies
-        if: matrix.target == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev flatpak flatpak-builder
-
-      - name: Compile Raw Linux Binary
-        if: matrix.target == 'linux'
-        run: |
-          flutter config --enable-linux-desktop
-          flutter pub get
-          flutter build linux --release
-
-      # 5. ISOLATED FLATPAK PACKAGING STEP
-      - name: Checkout Flatpak GitHub Actions
-        if: matrix.target == 'linux'
-        uses: actions/checkout@v4
-        with:
-          repository: flatpak/flatpak-github-actions
-          path: .flatpak-actions
-
-      - name: Add Flathub Remote
-        if: matrix.target == 'linux'
-        run: |
-          sudo flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
-      - name: Build Universal Flatpak Package
-        if: matrix.target == 'linux'
-        uses: ./.flatpak-actions/flatpak-builder
-        with:
-          bundle: com.galaxyNews.app.flatpak
-          manifest-path: flatpak/com.galaxyNews.app.json
-          run-tests: false
-
-      - name: Save Linux Universal Flatpak Artifact
-        if: matrix.target == 'linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: galaxynews-linux-flatpak-${{ github.run_number }}
-          path: com.galaxyNews.app.flatpak
