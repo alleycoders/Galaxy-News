@@ -76,7 +76,7 @@ jobs:
       # 5. ISOLATED FLATPAK PACKAGING STEP
       - name: Build Universal Flatpak Package
         if: matrix.target == 'linux'
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v1
+        uses: flatpak/flatpak-github-actions/.flatpak-builder@v1
         with:
           bundle: com.galaxyNews.app.flatpak
           manifest-path: flatpak/com.galaxyNews.app.json
