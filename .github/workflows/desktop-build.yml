@@ -35,9 +35,49 @@ jobs:
           flutter config --enable-windows-desktop
           flutter pub get
           flutter build windows --release
+        shell: pwsh
 
+      # 4. INSTALL INNO SETUP
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+        shell: pwsh
+
+      # 5. GENERATE SINGLE SETUP EXE USING INNO SETUP
+      - name: Create Single Setup Exe
+        run: |
+          $issContent = @"
+          [Setup]
+          AppName=Galaxy News
+          AppVersion=1.0
+          DefaultDirName={autopf}\GalaxyNews
+          DefaultGroupName=Galaxy News
+          OutputDir=.
+          OutputBaseFilename=GalaxyNews_Setup
+          Compression=lzma2
+          SolidCompression=yes
+          PrivilegesRequired=lowest
+
+          [Files]
+          Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+          [Icons]
+          Name: "{group}\Galaxy News"; Filename: "{app}\galaxynews.exe"
+          Name: "{autodesktop}\Galaxy News"; Filename: "{app}\galaxynews.exe"; Tasks: desktopicon
+
+          [Tasks]
+          Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"; Flags: unchecked
+          "@
+          
+          Set-Content -Path "installer.iss" -Value $issContent
+          
+          # Add Inno Setup CLI to path for the current session and compile
+          $env:Path += ";C:\Program Files (x86)\Inno Setup 6"
+          iscc installer.iss
+        shell: pwsh
+
+      # 6. UPLOAD SETUP EXE ARTIFACT
       - name: Save Windows Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: galaxynews-windows-build-${{ github.run_number }}
-          path: build/windows/x64/runner/Release/
+          name: galaxynews-setup-exe-${{ github.run_number }}
+          path: GalaxyNews_Setup.exe
