@@ -1,0 +1,11 @@
+**Galaxy News** is a minimalist, high-performance RSS reader built for users who value speed, clean design, and absolute autonomy. Designed from the ground up with zero pre-loaded feeds, you have complete control over every source you follow.
+
+### ✨ Key Features
+* **Zero Pre-Loaded Feeds:** Total user autonomy. No corporate recommendations or default subscriptions—add only what you want to read.
+* **Robust URL Validation:** Built-in safeguards check and validate link schemes locally before triggering any network requests.
+* **Smart Image Caching & Fallbacks:** Powered by efficient caching with graceful error handling so broken images or 404 links never break your reading layout.
+* **Scroll Position Memory:** Remembers your exact place in your feeds and articles when navigating back and forth, keeping your workflow uninterrupted.
+* **Distraction-Free Dark UI:** A sleek, modern dark-themed interface optimized for performance across screens.
+* **Open Source:** Transparent, clean codebase built with Flutter.
+
+Whether you're tracking tech blogs, news, or niche creators, Galaxy News keeps your feed fast, private, and entirely yours.
