@@ -24,7 +24,7 @@ jobs:
       - name: Set up Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0' # Adjust this to match your local Mac Flutter version
+          flutter-version: '3.24.0'
           channel: 'stable'
           cache: true
 
@@ -66,17 +66,17 @@ jobs:
           flutter pub get
           flutter build linux --release
 
-      - name: Save Raw Linux Binary Artifact
-        if: matrix.target == 'linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: galaxynews-linux-raw-${{ github.run_number }}
-          path: build/linux/x64/release/bundle/
-
       # 5. ISOLATED FLATPAK PACKAGING STEP
+      - name: Checkout Flatpak GitHub Actions
+        if: matrix.target == 'linux'
+        uses: actions/checkout@v4
+        with:
+          repository: flatpak/flatpak-github-actions
+          path: .flatpak-actions
+
       - name: Build Universal Flatpak Package
         if: matrix.target == 'linux'
-        uses: flatpak/flatpak-github-actions/.flatpak-builder@v1
+        uses: ./.flatpak-actions/flatpak-builder
         with:
           bundle: com.galaxyNews.app.flatpak
           manifest-path: flatpak/com.galaxyNews.app.json
