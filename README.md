@@ -13,3 +13,9 @@ Modern Grid UI: A responsive, magazine-style card layout optimized for clean sca
 Rich Article Rendering: Smart HTML parsing that strips out clutter while preserving distinct headings, readable body paragraphs, and inline images.
 
 Lightweight Architecture: Built natively with Flutter for macOS (and future mobile targets) without heavy system overhead or unnecessary tooling bloat.
+
+<p align="center">
+  <a href="https://alleycoders.github.io/galaxy-news" target="_blank">
+    <img src="https://img.shields.io/badge/website-galaxy--news-blue?style=for-the-badge&logo=google-chrome" alt="Galaxy News Website">
+  </a>
+</p>
