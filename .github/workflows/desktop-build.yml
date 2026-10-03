@@ -77,7 +77,7 @@ jobs:
       - name: Add Flathub Remote
         if: matrix.target == 'linux'
         run: |
-          flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
       - name: Build Universal Flatpak Package
         if: matrix.target == 'linux'
