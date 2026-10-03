@@ -74,6 +74,11 @@ jobs:
           repository: flatpak/flatpak-github-actions
           path: .flatpak-actions
 
+      - name: Add Flathub Remote
+        if: matrix.target == 'linux'
+        run: |
+          flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
       - name: Build Universal Flatpak Package
         if: matrix.target == 'linux'
         uses: ./.flatpak-actions/flatpak-builder
