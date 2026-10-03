@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dart_rss/dart_rss.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'rss_service.dart';
 
 void main() {
@@ -39,7 +40,6 @@ class _FeedSelectionScreenState extends State<FeedSelectionScreen> {
     _loadFeeds();
   }
 
-  // Load saved feeds from local storage
   Future<void> _loadFeeds() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -48,7 +48,6 @@ class _FeedSelectionScreenState extends State<FeedSelectionScreen> {
     });
   }
 
-  // Save feeds to local storage
   Future<void> _saveFeeds() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('saved_feeds', _userFeeds);
@@ -56,7 +55,17 @@ class _FeedSelectionScreenState extends State<FeedSelectionScreen> {
 
   void _addFeed() {
     final url = _urlController.text.trim();
-    if (url.isNotEmpty && !_userFeeds.contains(url)) {
+    
+    // Feature 1: URL Validation (Catching invalid/malformed links before hitting the network)
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || (!uri.isScheme('http') && !uri.isScheme('https'))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid HTTP/HTTPS URL.')),
+      );
+      return;
+    }
+
+    if (!_userFeeds.contains(url)) {
       setState(() {
         _userFeeds.add(url);
         _urlController.clear();
@@ -145,6 +154,7 @@ class _FeedSelectionScreenState extends State<FeedSelectionScreen> {
   }
 }
 
+// Feature 3: Scroll Position / State Memory using PageStorageKey
 class NewsFeedScreen extends StatefulWidget {
   final String feedUrl;
 
@@ -208,6 +218,7 @@ class _NewsFeedScreenState extends State<NewsFeedScreen> {
           final items = snapshot.data!.items;
 
           return GridView.builder(
+            key: PageStorageKey<String>('grid_${widget.feedUrl}'), // Preserves scroll position
             padding: const EdgeInsets.all(12.0),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 320,
@@ -282,6 +293,26 @@ class ArticleDetailScreen extends StatelessWidget {
 
   const ArticleDetailScreen({super.key, required this.item});
 
+  // Feature 2: Image Fallbacks & Caching using CachedNetworkImage
+  Widget _buildCachedImage(String src) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8.0),
+        child: CachedNetworkImage(
+          imageUrl: src,
+          placeholder: (context, url) => Container(
+            height: 150,
+            color: Colors.grey[850],
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          errorWidget: (context, url, error) => const SizedBox.shrink(), // Graceful fallback
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
   List<Widget> _buildRichContent(String? htmlString) {
     if (htmlString == null || htmlString.isEmpty) {
       return [const Text('No content available.')];
@@ -329,32 +360,14 @@ class ArticleDetailScreen extends StatelessWidget {
         final img = tag == 'img' ? node : node.querySelector('img');
         final src = img?.attributes['src'];
         if (src != null) {
-          widgets.add(Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Image.network(
-                src,
-                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-              ),
-            ),
-          ));
+          widgets.add(_buildCachedImage(src));
         }
       } else if (tag == 'p') {
         final img = node.querySelector('img');
         if (img != null) {
           final src = img.attributes['src'];
           if (src != null) {
-            widgets.add(Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Image.network(
-                  src,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-                ),
-              ),
-            ));
+            widgets.add(_buildCachedImage(src));
           }
         }
         if (text.isNotEmpty) {
@@ -392,6 +405,7 @@ class ArticleDetailScreen extends StatelessWidget {
         title: Text(item.source?.value ?? 'Article'),
       ),
       body: SingleChildScrollView(
+        key: PageStorageKey<String>('detail_${item.link ?? item.title}'), // Remembers scroll in detail view if needed
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
